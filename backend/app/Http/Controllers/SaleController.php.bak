@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sale;
+use Illuminate\Http\Request;
+
+class SaleController extends Controller
+{
+    public function store(Request $request)
+	{
+		$validated = $request->validate([
+			'contact_id' => 'required|exists:contacts,id',
+			'invoice_number' => 'required|string|max:255',
+			'amount' => 'required|numeric',
+			'status' => 'required|string',
+		]);
+
+		$sale = Sale::create($validated);
+
+		return response()->json($sale, 201);
+	}
+
+
+    public function index()
+    {
+        $sales = Sale::all();
+        return response()->json($sales, 200);
+    }
+}

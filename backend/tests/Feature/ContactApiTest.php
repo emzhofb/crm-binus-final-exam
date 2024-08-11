@@ -1,0 +1,160 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ContactApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** @test */
+	public function it_can_get_all_contacts()
+	{
+		\App\Models\Contact::create([
+			'name' => 'John Doe',
+			'company' => 'Doe Enterprises',
+			'email' => 'john.doe@example.com',
+			'phone' => '1234567890',
+		]);
+
+		\App\Models\Contact::create([
+			'name' => 'Jane Smith',
+			'company' => 'Smith LLC',
+			'email' => 'jane.smith@example.com',
+			'phone' => '0987654321',
+		]);
+
+		$response = $this->getJson('/contacts');
+
+		$response->assertStatus(200)
+				 ->assertJson([
+					 [
+						 'name' => 'John Doe',
+						 'company' => 'Doe Enterprises',
+						 'email' => 'john.doe@example.com',
+						 'phone' => '1234567890',
+					 ],
+					 [
+						 'name' => 'Jane Smith',
+						 'company' => 'Smith LLC',
+						 'email' => 'jane.smith@example.com',
+						 'phone' => '0987654321',
+					 ],
+				 ]);
+	}
+
+    /** @test */
+    public function it_can_create_a_contact()
+    {
+        $response = $this->postJson('/contacts', [
+            'name' => 'John Doe',
+            'company' => 'Doe Enterprises',
+            'email' => 'john.doe@example.com',
+            'phone' => '1234567890',
+        ]);
+
+        $response->assertStatus(201)
+                 ->assertJson([
+                     'name' => 'John Doe',
+                     'company' => 'Doe Enterprises',
+                     'email' => 'john.doe@example.com',
+                     'phone' => '1234567890',
+                 ]);
+    }
+
+    /** @test */
+    public function it_can_update_a_contact()
+    {
+        $contact = \App\Models\Contact::create([
+            'name' => 'John Doe',
+            'company' => 'Doe Enterprises',
+            'email' => 'john.doe@example.com',
+            'phone' => '1234567890',
+        ]);
+
+        $response = $this->putJson('/contacts/'.$contact->id, [
+            'name' => 'John Doe Updated',
+            'company' => 'Doe Enterprises Updated',
+            'email' => 'john.doe@example.com',
+            'phone' => '0987654321',
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'name' => 'John Doe Updated',
+                     'company' => 'Doe Enterprises Updated',
+                     'email' => 'john.doe@example.com',
+                     'phone' => '0987654321',
+                 ]);
+    }
+	
+	/** @test */
+	public function it_can_create_and_get_interactions()
+	{
+		$contact = \App\Models\Contact::factory()->create();
+
+		$response = $this->postJson('/interactions', [
+			'contact_id' => $contact->id,
+			'type' => 'email',
+			'details' => 'Follow-up email sent.',
+		]);
+
+		$response->assertStatus(201)
+				 ->assertJson([
+					 'type' => 'email',
+					 'details' => 'Follow-up email sent.',
+				 ]);
+
+		$response = $this->getJson('/interactions');
+		$response->assertStatus(200);
+	}
+	
+	/** @test */
+	public function it_can_create_and_get_sales()
+	{
+		// Membuat kontak terlebih dahulu
+		$contact = \App\Models\Contact::factory()->create();
+
+		// Mengirim permintaan dengan 'contact_id' yang benar
+		$response = $this->postJson('/sales', [
+			'contact_id' => $contact->id,
+			'invoice_number' => 'INV12345',
+			'amount' => 150.00,
+			'status' => 'pending',
+		]);
+
+		// Memastikan status sukses dan memeriksa JSON response
+		$response->assertStatus(201)
+				 ->assertJson([
+					 'invoice_number' => 'INV12345',
+					 'amount' => 150.00,
+					 'status' => 'pending',
+					 'contact_id' => $contact->id, // Memastikan 'contact_id' ada di output JSON
+				 ]);
+
+		// Mengambil semua entri sales
+		$response = $this->getJson('/sales');
+		$response->assertStatus(200);
+	}
+	
+	/** @test */
+	public function it_can_get_sales_funnel_report()
+	{
+		$response = $this->getJson('/reports/sales-funnel');
+		$response->assertStatus(200);
+	}
+
+	public function it_can_get_customer_lifetime_value_report()
+	{
+		$response = $this->getJson('/reports/customer-lifetime-value');
+		$response->assertStatus(200);
+	}
+
+	public function it_can_get_customer_segmentation_report()
+	{
+		$response = $this->getJson('/reports/customer-segmentation');
+		$response->assertStatus(200);
+	}
+}

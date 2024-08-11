@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Contact;
+
+class ContactController extends Controller
+{
+	public function index()
+    {
+        $contacts = Contact::all();
+        return response()->json($contacts, 200);
+    }
+	
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'company' => 'nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:contacts',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        $contact = Contact::create($validatedData);
+
+        return response()->json($contact, 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $contact = Contact::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'company' => 'nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:contacts,email,'.$contact->id,
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        $contact->update($validatedData);
+
+        return response()->json($contact, 200);
+    }
+}
